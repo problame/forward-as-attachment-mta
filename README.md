@@ -8,12 +8,12 @@ Many people seem to address this use case with `nullmailer` / `ssmtp` / `msmtp` 
 However, I found that many relay hosts put requirements on `{envelope,header}x{from,to}`.
 
 For example, I found it tricky to impossible to configure above tools to relay through AWS SES,
-where the IAM user is [restricted by various policies](https://docs.aws.amazon.com/ses/latest/dg/control-user-access.html).
+where the IAM user is [restricted by various policies](https://docs.aws.amazon.com/ses/latest/dg/control-user-access.html) to certain sender & receiver addresses.
 
-One approach to comply with such restrictions is to rewrite `{envelope,header}x{from,to}`.
-However, I found that hard or impossible to configure with above tools.
+To comply one would need to configure abice tools to rewrite `{envelope,header}x{from,to}`.
+However, I found that hard or impossible to do, especially if the recipient address is restricted by the relayhost policy.
 
-Hence, I wrote my this tiny `sendmail` replacement.
+Hence, I wrote this tiny `sendmail` replacement.
 Deploy it to your Debian using the instructions below.
 
 ## Demo
