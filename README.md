@@ -16,7 +16,15 @@ However, I found that hard or impossible to configure with above tools.
 Hence, I wrote my this tiny `sendmail` replacement.
 Deploy it to your Debian using the instructions below.
 
-The resulting emails sent to the specified receiver look like this:
+## Demo
+
+Here's how the received message look like in Mutt and Apple Mail.
+We use inline attachments for convenience in the GUI.
+
+<img width="45%" alt="image" src="https://github.com/problame/forward-as-attachment-mta/assets/956573/f86e53e1-cab4-4c1e-bbe6-ff88cde8f2a6">
+
+<img width="45%" alt="Apple Mail" src="https://github.com/problame/forward-as-attachment-mta/assets/956573/33876712-87a9-4600-8300-610db2ba3827">
+
 
 
 ## Build
