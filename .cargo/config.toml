@@ -1,0 +1,8 @@
+[profile.debug]
+# faster uploads
+strip = "debuginfo"
+
+[target.x86_64-unknown-linux-musl]
+# install via: brew install FiloSottile/musl-cross/musl-cross
+# see https://betterprogramming.pub/cross-compiling-rust-from-mac-to-linux-7fad5a454ab1
+linker = "x86_64-linux-musl-gcc"

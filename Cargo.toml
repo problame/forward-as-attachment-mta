@@ -1,0 +1,20 @@
+[package]
+name = "forward-as-attachment-mta"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+hostname = "0.3.1"
+# choose features such that it's a pure rust app, for simplicity
+lettre = { version = "0.11.3", default-features = false, features = ["builder", "smtp-transport", "rustls-tls", "serde", "tracing"] }
+mailparse = "0.14.1"
+once_cell = "1.19.0"
+regex = "1.10.3"
+rustls = { version = "0.22.0-alpha.3" }
+serde = { version = "1.0.196", features = ["derive"] }
+toml = "0.8.8"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+users = "0.11.0"
+whoami = "1.4.1"
