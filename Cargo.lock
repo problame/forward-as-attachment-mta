@@ -166,7 +166,7 @@ dependencies = [
 
 [[package]]
 name = "forward-as-attachment-mta"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hostname",
  "lettre",
