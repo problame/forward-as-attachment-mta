@@ -21,9 +21,9 @@ Deploy it to your Debian using the instructions below.
 Here's how the received message look like in Mutt and Apple Mail.
 We use inline attachments for convenience in the GUI.
 
-<img width="45%" alt="image" src="https://github.com/problame/forward-as-attachment-mta/assets/956573/f86e53e1-cab4-4c1e-bbe6-ff88cde8f2a6">
+<img width="45%" alt="screenshot mutt" src="https://github.com/problame/forward-as-attachment-mta/assets/956573/592247c9-9da0-41c2-ac19-4895a9014101">
 
-<img width="45%" alt="Apple Mail" src="https://github.com/problame/forward-as-attachment-mta/assets/956573/33876712-87a9-4600-8300-610db2ba3827">
+<img width="45%" alt="screenshot" src="https://github.com/problame/forward-as-attachment-mta/assets/956573/ebf25b7f-ea5f-4fa4-b9a5-66373063d68c">
 
 
 
