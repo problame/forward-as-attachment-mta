@@ -27,3 +27,6 @@ whoami = "1.4.1"
 assets = [
     ["target/release/forward-as-attachment-mta", "/usr/sbin/sendmail", "6755"],
 ]
+conflicts = "mail-transport-agent"
+provides = "mail-transport-agent"
+revision = "2"
