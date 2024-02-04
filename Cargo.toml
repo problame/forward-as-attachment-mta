@@ -29,4 +29,3 @@ assets = [
 ]
 conflicts = "mail-transport-agent"
 provides = "mail-transport-agent"
-revision = "2"

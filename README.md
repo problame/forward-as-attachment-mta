@@ -57,3 +57,15 @@ smtp_password= "..."
 ## Pre-Built Binary Packages
 
 See GitHub releases.
+
+
+## Release Process
+
+```
+version=0.2.1
+gsed -i -E 's/^version =.*/version = "'"$version"'"/'  Cargo.toml
+git add Cargo.toml
+git commit -m "$version"
+cargo deb --target x86_64-unknown-linux-musl
+gh release create v$version --generate-notes ./target/x86_64-unknown-linux-musl/debian/forward-as-attachment-mta_$version-1_amd64.deb
+```
