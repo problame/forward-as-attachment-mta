@@ -112,7 +112,84 @@ fn main() {
         },
         OriginalMessageBody::Error(_) => None,
     };
-    tracing::debug!(could_parse = original_parsed.is_some(), "parsed message");
+    tracing::debug!(
+        could_parse = original_parsed.is_some(),
+        ?original_parsed,
+        "parsed message"
+    );
+
+    // Try to create an inline attachment for the receivers's convenience of not
+    // having to double-click the attachment.
+    //
+    // This is surprisingly tricky, as the message/rfc822 MIME type only allows
+    // Content-Transfer-Encoding 7bit, 8bit or binary.
+    // Any other encoding (quoted-printable, base64) will break in
+    // Gmail and AppleMail, probably elsewhere. The exact kind of breakage depends:
+    // in AppleMail, only the `From`, `To`, and `Subject`
+    // headers are shown inline, and the rest of the message is not visible / accessible.
+    // In Gmail, it always shows as an attachment and one gets an error when clicking on it.
+    let re_encoded = (|| {
+        let Some(original_parsed) = &original_parsed else {
+            debug!("not parseable");
+            return None;
+        };
+        if original_parsed.ctype.mimetype != "text/plain" {
+            // TODO: implement support.
+            // Multi-part would be tricky as we'd possible need to use different
+            // boundaries to avoid collisions with the boundaries that our wrapper
+            // message will add.
+            debug!("not text/plain content-type");
+            return None;
+        }
+        let mut builder = SinglePart::builder();
+        for header in &original_parsed.headers {
+            #[derive(Clone)]
+            struct RawHeader(HeaderName, String);
+            impl lettre::message::header::Header for RawHeader {
+                fn name() -> HeaderName {
+                    unimplemented!("not needed, we only use display")
+                }
+
+                fn parse(_: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+                    unimplemented!("not needed, we only use display")
+                }
+
+                fn display(&self) -> lettre::message::header::HeaderValue {
+                    HeaderValue::new(self.0.clone(), self.1.clone())
+                }
+            }
+            impl RawHeader {
+                fn new(hdr: &mailparse::MailHeader) -> Option<Self> {
+                    let header_name =
+                        HeaderName::new_from_ascii(hdr.get_key()).ok().or_else(|| {
+                            debug!(hdr=?hdr.get_key(), "header is not ascii");
+                            None
+                        })?;
+                    let header_value = hdr.get_value_utf8().ok().or_else(|| {
+                        debug!(hdr=?hdr, "header value is not utf-8");
+                        None
+                    })?;
+                    Some(Self(header_name, header_value))
+                }
+            }
+            builder = builder.header(RawHeader::new(header).or_else(|| {
+                debug!("can't adapt libraries into each other");
+                None
+            })?);
+        }
+        Some(
+            builder.body(
+                Body::new_with_encoding(
+                    original_parsed.get_body().ok().or_else(|| {
+                        debug!("cannot get body");
+                        None
+                    })?,
+                    lettre::message::header::ContentTransferEncoding::Base64,
+                )
+                .unwrap(),
+            ),
+        )
+    })();
 
     // Put together the wrapper message
     let sender = {
@@ -209,10 +286,14 @@ fn main() {
                 writeln!(&mut body, "WARNING: could not determine permissions of the config file, they may or may not be too lax: {e}")?;
             },
         }
-        writeln!(
-            &mut body,
-            "The original message is attached inline to this wrapper message."
-        )?;
+        writeln!(&mut body)?;
+        {
+            write!(&mut body, "The original message is attached to this wrapper message.")?;
+            if re_encoded.is_some() {
+                write!(&mut body, " For convenience, a re-encoded copy is attached inline.")?;
+            }
+            writeln!(&mut body)?;
+        }
         writeln!(&mut body)?;
         writeln!(&mut body, "Invocation args: {args}")?;
         writeln!(&mut body)?;
@@ -261,83 +342,7 @@ fn main() {
         .multipart({
             let mut mp_builder = MultiPart::mixed().singlepart(SinglePart::plain(body));
 
-            // Try to create an inline attachment for the receivers's convenience of not
-            // having to double-click the attachment.
-            //
-            // This is surprisingly tricky, as the message/rfc822 MIME type only allows
-            // Content-Transfer-Encoding 7bit, 8bit or binary.
-            // Any other encoding (quoted-printable, base64) will break in
-            // Gmail and AppleMail, probably elsewhere. The exact kind of breakage depends:
-            // in AppleMail, only the `From`, `To`, and `Subject`
-            // headers are shown inline, and the rest of the message is not visible / accessible.
-            // In Gmail, it always shows as an attachment and one gets an error when clicking on it.
-            //
-            // So, try to re-encode the message body. If that doesn't work, the user can fallback
-            // to the attachment.
             mp_builder = {
-                let re_encoded = (|| {
-                    let Some(original_parsed) = original_parsed else {
-                        debug!("not parseable");
-                        return None;
-                    };
-                    if original_parsed.ctype.mimetype != "text/plain" {
-                        debug!("not text/plain content-type");
-                        return None;
-                    }
-                    let mut builder = SinglePart::builder();
-                    for header in &original_parsed.headers {
-                        #[derive(Clone)]
-                        struct RawHeader(HeaderName, String);
-                        impl lettre::message::header::Header for RawHeader {
-                            fn name() -> HeaderName {
-                                unimplemented!("not needed, we only use display")
-                            }
-
-                            fn parse(
-                                _: &str,
-                            ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>>
-                            {
-                                unimplemented!("not needed, we only use display")
-                            }
-
-                            fn display(&self) -> lettre::message::header::HeaderValue {
-                                HeaderValue::new(self.0.clone(), self.1.clone())
-                            }
-                        }
-                        impl RawHeader {
-                            fn new(hdr: &mailparse::MailHeader) -> Option<Self> {
-                                let header_name = HeaderName::new_from_ascii(hdr.get_key())
-                                    .ok()
-                                    .or_else(|| {
-                                        debug!(hdr=?hdr.get_key(), "header is not ascii");
-                                        None
-                                    })?;
-                                let header_value = hdr.get_value_utf8().ok().or_else(|| {
-                                    debug!(hdr=?hdr, "header value is not utf-8");
-                                    None
-                                })?;
-                                Some(Self(header_name, header_value))
-                            }
-                        }
-                        builder = builder.header(RawHeader::new(header).or_else(|| {
-                            debug!("can't adapt libraries into each other");
-                            None
-                        })?);
-                    }
-                    Some(
-                        builder.body(
-                            Body::new_with_encoding(
-                                original_parsed.get_body().ok().or_else(|| {
-                                    debug!("cannot get body");
-                                    None
-                                })?,
-                                lettre::message::header::ContentTransferEncoding::Base64,
-                            )
-                            .unwrap(),
-                        ),
-                    )
-                })();
-
                 if let Some(re_encoded) = re_encoded {
                     mp_builder.singlepart(
                         SinglePart::builder()
