@@ -208,12 +208,11 @@ fn main() {
                     .map(|s| s.to_string_lossy())
                     .unwrap_or(Cow::Borrowed(""))
             )
-            .unwrap()
         };
-        display_or_none("username", users::get_current_username());
-        display_or_none("groupname", users::get_current_groupname());
-        display_or_none("effective username", users::get_effective_username());
-        display_or_none("effective groupname", users::get_effective_groupname());
+        display_or_none("username", users::get_current_username())?;
+        display_or_none("groupname", users::get_current_groupname())?;
+        display_or_none("effective username", users::get_effective_username())?;
+        display_or_none("effective groupname", users::get_effective_groupname())?;
         writeln!(&mut body)?;
         writeln!(&mut body, "hostname: {}", whoami::hostname())?;
         writeln!(&mut body, "device name: {}", whoami::devicename())?;
